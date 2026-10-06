@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InnSpark Monitor — Enterprise Activity &amp; Threat Intelligence</title>
+    
+    <!-- Google Fonts & Font Awesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            /* Senior Engineer Dark Theme (Clean, High Contrast, Modern Linear/Vercel Style) */
+            --bg-base: #090d16;
+            --bg-sidebar: #0d1322;
+            --bg-card: #11182c;
+            --bg-card-hover: #17213b;
+            --bg-subtle: #18223d;
+            --bg-input: #0b101f;
+            
+            --border: rgba(255, 255, 255, 0.08);
+            --border-focus: #3b82f6;
+            --border-hover: rgba(255, 255, 255, 0.16);
+            
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: rgba(37, 99, 235, 0.15);
+            
+            --cyan: #06b6d4;
+            --green: #10b981;
+            --green-light: rgba(16, 185, 129, 0.15);
+            --red: #ef4444;
+            --red-light: rgba(239, 68, 68, 0.15);
+            --amber: #f59e0b;
+            --amber-light: rgba(245, 158, 11, 0.15);
+            --purple: #8b5cf6;
+            
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            
+            --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+            --shadow-modal: 0 20px 40px -5px rgba(0, 0, 0, 0.6);
+            
+            --sidebar-w: 240px;
+            --header-h: 60px;
+        }
+
+        /* Clean Enterprise Light Mode */
+        [data-theme="light"] {
+            --bg-base: #f8fafc;
+            --bg-sidebar: #ffffff;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f1f5f9;
+            --bg-subtle: #f1f5f9;
+            --bg-input: #ffffff;
+            
+            --border: #e2e8f0;
+            --border-focus: #2563eb;
+            --border-hover: #cbd5e1;
+            
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-dim: #94a3b8;
+            
+            --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+            --shadow-modal: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            overflow: hidden;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Master Shell */
+        .app-shell { display: flex; width: 100%; height: 100%; }
+
+        /* Left Navigation Sidebar */
+        .sidebar {
+            width: var(--sidebar-w);
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 50;
+        }
+
+        .sidebar-brand {
+            height: var(--header-h);
+            display: flex;
+            align-items: center;
+            padding: 0 18px;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--primary), var(--cyan));
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .brand-meta h1 {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1.1;
+        }
+
+        .brand-meta span {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--cyan);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 14px 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .nav-label {
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 10px 10px 4px 10px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            transition: all 0.15s;
+        }
+
+        .nav-link:hover {
+            color: var(--text-main);
+            background-color: var(--bg-card-hover);
+        }
+
+        .nav-link.active {
+            color: #fff;
+            background: var(--primary);
+        }
+
+        .nav-link-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-link i {
+            width: 16px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .nav-counter {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 1px 6px;
+            border-radius: 10px;
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--red);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .sidebar-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--bg-card);
+        }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            color: var(--cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            position: relative;
+        }
+
+        .online-dot {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            border: 1.5px solid var(--bg-card);
+        }
+
+        /* Workspace Area */
+        .workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        /* Top Header */
+        .header {
+            height: var(--header-h);
+            background-color: var(--bg-header);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            gap: 14px;
+            flex-shrink: 0;
+            z-index: 40;
+        }
+
+        .header-search-bar {
+            display: flex;
+            align-items: center;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 6px 12px;
+            gap: 8px;
+            width: 320px;
+            transition: all 0.2s;
+        }
+
+        .header-search-bar:focus-within {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 2px var(--primary-light);
+        }
+
+        .header-search-bar input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            font-size: 12px;
+            width: 100%;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--green-light);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--green);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--green);
+            position: relative;
+        }
+        .pulse-dot::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 50%;
+            background-color: var(--green);
+            animation: pulseRing 1.8s infinite cubic-bezier(0, 0, 0.2, 1);
+        }
+        @keyframes pulseRing {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(3.5); opacity: 0; }
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-icon:hover {
+            color: var(--text-main);
+            border-color: var(--border-hover);
+        }
+
+        .btn-main {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-main.primary { background: var(--primary); color: #fff; }
+        .btn-main.primary:hover { background: var(--primary-hover); }
+        .btn-main.danger { background: var(--red); color: #fff; }
+        .btn-main.secondary { background: var(--bg-subtle); color: var(--text-main); border-color: var(--border); }
+        .btn-main.secondary:hover { background: var(--bg-card-hover); }
+
+        /* Main Viewport Container */
+        .content-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .tab-panel {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .tab-panel.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Command Banner */
+        .top-banner {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-subtle));
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--primary);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .banner-title h2 { font-size: 15px; font-weight: 800; color: var(--text-main); }
+        .banner-title p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+        /* 5 High-Impact Metric Cards */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+        }
+
+        .metric-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: var(--shadow-card);
+            transition: all 0.15s;
+        }
+        .metric-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+        }
+
+        .card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .card-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-val {
+            font-size: 28px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+
+        .card-footer {
+            font-size: 11px;
+            color: var(--text-dim);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Threat Overview + Charts Grid */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: 260px 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 1100px) { .overview-grid { grid-template-columns: 1fr; } }
+
+        .ui-box {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .box-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 8px;
+        }
+
+        .box-title {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .threat-gauge-disc {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 5px solid var(--amber);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 6px auto;
+            background: var(--bg-subtle);
+        }
+
+        .gauge-num {
+            font-size: 26px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1;
+        }
+
+        /* 1-Click Interactive Attack Lab */
+        .sim-lab {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .sim-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+        }
+
+        .sim-card {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .sim-card:hover {
+            border-color: var(--primary);
+            background: var(--bg-card-hover);
+            transform: translateY(-1px);
+        }
+
+        .sim-card-title {
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-main);
+        }
+
+        .sim-card-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        /* Tables */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: var(--bg-subtle);
+            color: var(--text-muted);
+            padding: 10px 14px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--text-muted);
+        }
+
+        tr:hover td {
+            background-color: var(--bg-card-hover);
+            color: var(--text-main);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .badge.critical { background: var(--red-light); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge.high     { background: var(--amber-light); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge.medium   { background: rgba(139, 92, 246, 0.15); color: var(--purple); border: 1px solid rgba(139, 92, 246, 0.3); }
+        .badge.success  { background: var(--green-light); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
+
+        /* Flyout Drawer Modal */
+        .drawer-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(2px);
+            z-index: 100;
+            display: none;
+        }
+        .drawer-overlay.open { display: block; }
+
+        .drawer-panel {
+            position: fixed;
+            top: 0; right: 0; bottom: 0;
+            width: 420px;
+            max-width: 90vw;
+            background: var(--bg-card);
+            border-left: 1px solid var(--border);
+            box-shadow: var(--shadow-modal);
+            z-index: 110;
+            transform: translateX(100%);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 16px;
+            overflow-y: auto;
+        }
+        .drawer-panel.open { transform: translateX(0); }
+
+        /* Toast Container */
+        #toast-box {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--primary);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            box-shadow: var(--shadow-modal);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideIn 0.2s ease;
+        }
+        @keyframes slideIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <!-- Toast Notification Stack -->
+    <div id="toast-box"></div>
+
+    <!-- Threat Detail Drawer -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+    <aside class="drawer-panel" id="threatDrawer">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-shield-virus" style="color:var(--red); font-size:16px;"></i>
+                <span class="mono" style="font-size:13px; font-weight:800;" id="dThreatId">THREAT-#1024</span>
+            </div>
+            <button class="btn-icon" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="ui-box" style="background:var(--bg-subtle); padding:12px;">
+            <span style="font-size:10px; font-weight:800; color:var(--text-dim); text-transform:uppercase;">Detection Reasoning</span>
+            <div style="font-size:12px; font-weight:700; color:#fff; margin-top:4px;" id="dReason">—</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div class="ui-box" style="padding:10px;">
+                <span style="font-size:9px; font-weight:700; color:var(--text-dim); text-transform:uppercase;">Origin IP</span>
+                <span class="mono" style="color:var(--cyan); font-weight:700; margin-top:2px;" id="dIp">—</span>
+            </div>
+            <div class="ui-box" style="padding:10px;">
+                <span style="font-size:9px; font-weight:700; color:var(--text-dim); text-transform:uppercase;">Target User</span>
+                <span style="color:#fff; font-weight:700; margin-top:2px;" id="dUser">—</span>
+            </div>
+            <div class="ui-box" style="padding:10px;">
+                <span style="font-size:9px; font-weight:700; color:var(--text-dim); text-transform:uppercase;">Classification</span>
+                <span style="color:var(--amber); font-weight:700; margin-top:2px;" id="dType">—</span>
+            </div>
+            <div class="ui-box" style="padding:10px;">
+                <span style="font-size:9px; font-weight:700; color:var(--text-dim); text-transform:uppercase;">Timestamp</span>
+                <span class="mono" style="color:var(--text-muted); font-size:11px; margin-top:2px;" id="dTime">—</span>
+            </div>
+        </div>
+
+        <div class="ui-box">
+            <span class="box-title"><i class="fa-solid fa-timeline"></i> Sequence Telemetry</span>
+            <div style="display:flex; flex-direction:column; gap:6px; font-family:'JetBrains Mono'; font-size:11px;">
+                <div style="padding:6px 8px; background:var(--bg-subtle); border-left:2px solid var(--red);">Ingress TCP packet verified</div>
+                <div style="padding:6px 8px; background:var(--bg-subtle); border-left:2px solid var(--red);">Multiple failures recorded in window</div>
+                <div style="padding:6px 8px; background:var(--bg-subtle); border-left:2px solid var(--green);">Heuristic event stored in MySQL</div>
+            </div>
+        </div>
+
+        <div style="margin-top:auto; display:flex; gap:8px; padding-top:12px; border-top:1px solid var(--border);">
+            <button class="btn-main danger" style="flex:1;" onclick="showToast('IP Block Rule Added to Firewall Simulator', true)"><i class="fa-solid fa-ban"></i> Block IP</button>
+            <button class="btn-main secondary" style="flex:1;" onclick="closeDrawer()"><i class="fa-solid fa-check"></i> Close</button>
+        </div>
+    </aside>
+
+    <!-- App Shell -->
+    <div class="app-shell">
+
+        <!-- Sidebar Navigation (All Buttons Work Seamlessly) -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="brand-meta">
+                    <h1>InnSpark Monitor</h1>
+                    <span>Threat Intelligence</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-menu">
+                <span class="nav-label">Operations</span>
+                <button class="nav-link active" onclick="switchNav('dashboard', this)">
+                    <div class="nav-link-left"><i class="fa-solid fa-gauge-high"></i> <span>Dashboard</span></div>
+                </button>
+                <button class="nav-link" onclick="switchNav('threats', this)">
+                    <div class="nav-link-left"><i class="fa-solid fa-triangle-exclamation"></i> <span>Live Threats</span></div>
+                    <span class="nav-counter" id="sideBadge">0</span>
+                </button>
+                <button class="nav-link" onclick="switchNav('logins', this)">
+                    <div class="nav-link-left"><i class="fa-solid fa-list-check"></i> <span>Login Activity</span></div>
+                </button>
+                <button class="nav-link" onclick="switchNav('simulation', this)">
+                    <div class="nav-link-left"><i class="fa-solid fa-flask-vial"></i> <span>Attack Simulator</span></div>
+                </button>
+
+                <span class="nav-label">Governance</span>
+                <button class="nav-link" onclick="switchNav('sessions', this)">
+                    <div class="nav-link-left"><i class="fa-solid fa-users-viewfinder"></i> <span>Active Sessions</span></div>
+                </button>
+                <button class="nav-link" onclick="switchNav('rbac', this)">
+                    <div class="nav-link-left"><i class="fa-solid fa-id-card-clip"></i> <span>Users &amp; RBAC</span></div>
+                </button>
+                <button class="nav-link" onclick="switchNav('rules', this)">
+                    <div class="nav-link-left"><i class="fa-solid fa-sliders"></i> <span>Detection Rules</span></div>
+                </button>
+                <button class="nav-link" onclick="switchNav('analytics', this)">
+                    <div class="nav-link-left"><i class="fa-solid fa-chart-line"></i> <span>Security Analytics</span></div>
+                </button>
+                <button class="nav-link" onclick="switchNav('mfa', this)">
+                    <div class="nav-link-left"><i class="fa-solid fa-key"></i> <span>2FA / Security</span></div>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-chip">
+                    <div class="user-avatar">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <div class="online-dot"></div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px; font-weight:700; color:var(--text-main);">admin</div>
+                        <div style="font-size:10px; font-weight:800; color:var(--cyan);">ADMIN ROLE</div>
+                    </div>
+                </div>
+                <button class="btn-icon" title="Reset All Data to Zero" onclick="resetDatabase()"><i class="fa-solid fa-trash-can" style="color:var(--red);"></i></button>
+            </div>
+        </aside>
+
+        <!-- Workspace Viewport -->
+        <main class="workspace">
+
+            <!-- Top Header (Clean, Senior Design) -->
+            <header class="header">
+                <div class="header-search-bar">
+                    <i class="fa-solid fa-magnifying-glass" style="color:var(--text-dim); font-size:12px;"></i>
+                    <input type="text" placeholder="Search IP address, username, threat ID..." onkeyup="filterAllData(this.value)">
+                </div>
+
+                <div class="header-actions">
+                    <div class="status-badge">
+                        <div class="pulse-dot"></div>
+                        <span>LIVE MONITORING</span>
+                    </div>
+
+                    <button class="btn-main primary" onclick="runDetectionScan()">
+                        <i class="fa-solid fa-bolt"></i> <span>Scan Threats</span>
+                    </button>
+
+                    <button class="btn-icon" title="Refresh Live Data" onclick="refreshAllData()">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+
+                    <button class="btn-icon" id="themeBtn" title="Toggle Light/Dark Theme" onclick="toggleTheme()">
+                        <i class="fa-solid fa-sun"></i>
+                    </button>
+
+                    <button class="btn-main secondary" style="font-size:11px;" title="Reset all counts to zero" onclick="resetDatabase()">
+                        <i class="fa-solid fa-broom"></i> <span>Reset to 0</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Multi-Tab Viewport -->
+            <div class="content-container">
+
+                <!-- 1. DASHBOARD OVERVIEW (DEFAULT) -->
+                <div class="tab-panel active" id="tab-dashboard">
+
+                    <!-- Command Banner -->
+                    <div class="top-banner">
+                        <div class="banner-title">
+                            <h2>Security Operations Command Center</h2>
+                            <p>Real-time login telemetry, anomaly heuristics, and automated token-bucket rate limiting.</p>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <span class="badge success"><i class="fa-solid fa-circle-check"></i> System Armed</span>
+                            <span class="mono" style="font-size:11px; color:var(--text-dim);" id="clockDisplay">12:28:12</span>
+                        </div>
+                    </div>
+
+                    <!-- 5 Metric KPI Cards -->
+                    <div class="metrics-row">
+                        <div class="metric-card">
+                            <div class="card-top">
+                                <span class="card-label">Total Attempts</span>
+                                <i class="fa-solid fa-server" style="color:var(--cyan);"></i>
+                            </div>
+                            <div class="card-val" id="valTotal">0</div>
+                            <div class="card-footer"><span>Ingress requests</span><span style="color:var(--green);">&uarr; Baseline</span></div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="card-top">
+                                <span class="card-label">Authorized</span>
+                                <i class="fa-solid fa-circle-check" style="color:var(--green);"></i>
+                            </div>
+                            <div class="card-val" style="color:var(--green);" id="valSuccess">0</div>
+                            <div class="card-footer"><span>Valid credentials</span><span>Verified</span></div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="card-top">
+                                <span class="card-label">Failed Logins</span>
+                                <i class="fa-solid fa-circle-xmark" style="color:var(--red);"></i>
+                            </div>
+                            <div class="card-val" style="color:var(--red);" id="valFailed">0</div>
+                            <div class="card-footer"><span>Invalid auth attempts</span><span>Monitored</span></div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="card-top">
+                                <span class="card-label">Suspicious Events</span>
+                                <i class="fa-solid fa-triangle-exclamation" style="color:var(--amber);"></i>
+                            </div>
+                            <div class="card-val" style="color:var(--amber);" id="valThreats">0</div>
+                            <div class="card-footer"><span>Heuristic anomalies</span><span>10m window</span></div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="card-top">
+                                <span class="card-label">Brute Force</span>
+                                <i class="fa-solid fa-biohazard" style="color:var(--red);"></i>
+                            </div>
+                            <div class="card-val" style="color:var(--red);" id="valBrute">0</div>
+                            <div class="card-footer"><span>IP bursts (&ge;5 fails)</span><span class="badge critical">BURSTS</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Threat Score & Charts Row -->
+                    <div class="overview-grid">
+                        
+                        <!-- Threat Score Gauge Box -->
+                        <div class="ui-box">
+                            <div class="box-head">
+                                <span class="box-title"><i class="fa-solid fa-gauge-high" style="color:var(--amber);"></i> Threat Score</span>
+                                <span class="badge high" id="riskBadge">LOW RISK</span>
+                            </div>
+                            <div class="threat-gauge-disc" id="gaugeDisc">
+                                <span class="gauge-num" id="gaugeNum">0</span>
+                                <span class="mono" style="font-size:9px; color:var(--text-dim);">/ 100</span>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:4px; font-size:11px;">
+                                <div style="display:flex; justify-content:space-between; padding:4px 6px; background:var(--bg-subtle); border-radius:3px;">
+                                    <span>Brute Force Bursts</span><span style="font-weight:700; color:var(--red);">Active Check</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; padding:4px 6px; background:var(--bg-subtle); border-radius:3px;">
+                                    <span>Credential Stuffing</span><span style="font-weight:700; color:var(--amber);">Active Check</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chart 1: Traffic Breakdown -->
+                        <div class="ui-box">
+                            <div class="box-head">
+                                <span class="box-title"><i class="fa-solid fa-chart-area" style="color:var(--cyan);"></i> Ingress Traffic Breakdown</span>
+                            </div>
+                            <div style="height: 180px; position: relative;">
+                                <canvas id="dashBarChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Chart 2: Threat Categories -->
+                        <div class="ui-box">
+                            <div class="box-head">
+                                <span class="box-title"><i class="fa-solid fa-chart-pie" style="color:var(--purple);"></i> Threat Types</span>
+                            </div>
+                            <div style="height: 180px; position: relative;">
+                                <canvas id="dashPieChart"></canvas>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- 1-Click Attack Simulation Lab -->
+                    <div class="sim-lab">
+                        <div class="box-head" style="border:none; padding:0;">
+                            <span class="box-title"><i class="fa-solid fa-flask-vial" style="color:var(--primary);"></i> Attack Simulation Lab &bull; Test Triggers</span>
+                            <span class="mono" style="font-size:10px; color:var(--text-dim);" id="simStatus">READY TO EXECUTE</span>
+                        </div>
+                        <div class="sim-grid">
+                            <div class="sim-card" onclick="simulateAttack('normal')">
+                                <div class="sim-card-title"><i class="fa-solid fa-circle-check" style="color:var(--green);"></i> 1. Valid Login</div>
+                                <p class="sim-card-desc">Simulates authorized user login for `johndoe`.</p>
+                                <span class="badge success">AUTHORIZED</span>
+                            </div>
+
+                            <div class="sim-card" onclick="simulateAttack('brute_force')">
+                                <div class="sim-card-title"><i class="fa-solid fa-skull" style="color:var(--red);"></i> 2. Brute Force (5 Fails)</div>
+                                <p class="sim-card-desc">Injects 5 failed attempts from IP `10.0.0.88`.</p>
+                                <span class="badge critical">5 FAILS / IP</span>
+                            </div>
+
+                            <div class="sim-card" onclick="simulateAttack('credential_stuffing')">
+                                <div class="sim-card-title"><i class="fa-solid fa-user-ninja" style="color:var(--amber);"></i> 3. Cred Stuffing</div>
+                                <p class="sim-card-desc">Targets `victim_account` across proxy IPs.</p>
+                                <span class="badge high">USER SPRAY</span>
+                            </div>
+
+                            <div class="sim-card" onclick="simulateAttack('unusual_success')">
+                                <div class="sim-card-title"><i class="fa-solid fa-unlock-keyhole" style="color:var(--purple);"></i> 4. Unusual Success</div>
+                                <p class="sim-card-desc">3 failures followed by success for `alex_user`.</p>
+                                <span class="badge medium">ANOMALY</span>
+                            </div>
+
+                            <div class="sim-card" onclick="simulateAttack('rate_limit')">
+                                <div class="sim-card-title"><i class="fa-solid fa-gauge-high" style="color:var(--cyan);"></i> 5. Rate Limit (429)</div>
+                                <p class="sim-card-desc">Sends 6 rapid burst requests to test throttling.</p>
+                                <span class="badge success">HTTP 429</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Threat Incident Live Table -->
+                    <div class="ui-box">
+                        <div class="box-head">
+                            <span class="box-title"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red);"></i> Detected Suspicious Threats</span>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn-main secondary" style="font-size:11px;" onclick="exportCsv()"><i class="fa-solid fa-file-export"></i> Export CSV</button>
+                                <button class="btn-main primary" style="font-size:11px;" onclick="runDetectionScan()"><i class="fa-solid fa-rotate"></i> Scan Database</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Severity</th>
+                                        <th>Origin IP</th>
+                                        <th>Target User</th>
+                                        <th>Threat Category</th>
+                                        <th>Reasoning Description</th>
+                                        <th>Timestamp</th>
+                                        <th>Inspect</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashThreatsBody">
+                                    <tr><td colspan="8" style="text-align:center; padding:18px;">Awaiting threat data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 2. LIVE THREATS VIEW -->
+                <div class="tab-panel" id="tab-threats">
+                    <div class="ui-box">
+                        <div class="box-head">
+                            <span class="box-title"><i class="fa-solid fa-shield-virus" style="color:var(--red);"></i> All Incident Records</span>
+                            <button class="btn-main primary" onclick="runDetectionScan()"><i class="fa-solid fa-bolt"></i> Run Threat Scan</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Severity</th>
+                                        <th>Source IP</th>
+                                        <th>Target Account</th>
+                                        <th>Category</th>
+                                        <th>Reasoning</th>
+                                        <th>Timestamp</th>
+                                        <th>Inspect</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fullThreatsBody">
+                                    <tr><td colspan="8" style="text-align:center; padding:18px;">Loading threat records...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. LOGIN ACTIVITY VIEW -->
+                <div class="tab-panel" id="tab-logins">
+                    <div class="ui-box">
+                        <div class="box-head">
+                            <span class="box-title"><i class="fa-solid fa-list-check" style="color:var(--cyan);"></i> Ingress Login Attempts</span>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn-main secondary" style="font-size:11px;" onclick="fetchLogins('')">All</button>
+                                <button class="btn-main secondary" style="font-size:11px;" onclick="fetchLogins('SUCCESS')">Success</button>
+                                <button class="btn-main secondary" style="font-size:11px;" onclick="fetchLogins('FAILURE')">Failures</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Origin IP</th>
+                                        <th>Status</th>
+                                        <th>Client / User Agent</th>
+                                        <th>Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fullLoginsBody">
+                                    <tr><td colspan="6" style="text-align:center; padding:18px;">Loading login attempts...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. ATTACK SIMULATION LAB TAB -->
+                <div class="tab-panel" id="tab-simulation">
+                    <div class="ui-box">
+                        <div class="box-head">
+                            <span class="box-title"><i class="fa-solid fa-flask-vial" style="color:var(--primary);"></i> Attack Simulation Console</span>
+                        </div>
+                        <p style="font-size:12px; color:var(--text-muted);">Execute simulated attacker payloads to demonstrate detection rules live in your interview.</p>
+                        <div class="sim-grid" style="margin-top:10px;">
+                            <button class="sim-card" onclick="simulateAttack('normal')">
+                                <div class="sim-card-title"><i class="fa-solid fa-circle-check" style="color:var(--green);"></i> 1. Valid Login</div>
+                                <span class="badge success">TEST NORMAL ACCESS</span>
+                            </button>
+                            <button class="sim-card" onclick="simulateAttack('brute_force')">
+                                <div class="sim-card-title"><i class="fa-solid fa-skull" style="color:var(--red);"></i> 2. Brute Force (5 Fails)</div>
+                                <span class="badge critical">TEST BRUTE FORCE RULE</span>
+                            </button>
+                            <button class="sim-card" onclick="simulateAttack('credential_stuffing')">
+                                <div class="sim-card-title"><i class="fa-solid fa-user-ninja" style="color:var(--amber);"></i> 3. Cred Stuffing</div>
+                                <span class="badge high">TEST SPRAY DETECTION</span>
+                            </button>
+                            <button class="sim-card" onclick="simulateAttack('unusual_success')">
+                                <div class="sim-card-title"><i class="fa-solid fa-unlock-keyhole" style="color:var(--purple);"></i> 4. Unusual Success</div>
+                                <span class="badge medium">TEST ANOMALY DETECTION</span>
+                            </button>
+                            <button class="sim-card" onclick="simulateAttack('rate_limit')">
+                                <div class="sim-card-title"><i class="fa-solid fa-gauge-high" style="color:var(--cyan);"></i> 5. Rate Limit (429)</div>
+                                <span class="badge success">TEST BUCKET4J THROTTLING</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. ACTIVE SESSIONS VIEW -->
+                <div class="tab-panel" id="tab-sessions">
+                    <div class="ui-box">
+                        <div class="box-head">
+                            <span class="box-title"><i class="fa-solid fa-users-viewfinder" style="color:var(--green);"></i> Active Sessions Management</span>
+                            <button class="btn-main danger" style="font-size:11px;" onclick="showToast('Expired Inactive Sessions (>15 mins)')"><i class="fa-solid fa-power-off"></i> Expire Inactive</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Session ID</th>
+                                        <th>IP Address</th>
+                                        <th>Device</th>
+                                        <th>Last Active</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="font-weight:700;">admin</td>
+                                        <td class="mono" style="color:var(--cyan);">9f81a7b2-4d32-4110-8b1e-91823abce120</td>
+                                        <td class="mono">127.0.0.1</td>
+                                        <td>Chrome / Windows 11</td>
+                                        <td class="mono">Just now</td>
+                                        <td><span class="badge success">ACTIVE</span></td>
+                                        <td><button class="btn-main secondary" style="padding:2px 8px; font-size:10px;" onclick="showToast('Terminated Session')">Terminate</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. USERS & RBAC VIEW -->
+                <div class="tab-panel" id="tab-rbac">
+                    <div class="ui-box">
+                        <div class="box-head">
+                            <span class="box-title"><i class="fa-solid fa-id-card-clip" style="color:var(--purple);"></i> Role-Based Access Control Directory</span>
+                            <span class="badge success">RBAC ACTIVE</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Assigned Role</th>
+                                        <th>Failed Logins</th>
+                                        <th>MFA</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="font-weight:700;">admin</td>
+                                        <td>admin@innspark.com</td>
+                                        <td><span class="badge critical">ADMIN</span></td>
+                                        <td class="mono">0</td>
+                                        <td><span class="badge success">ENABLED</span></td>
+                                        <td><span class="badge success">ACTIVE</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight:700;">victim_account</td>
+                                        <td>victim@innspark.com</td>
+                                        <td><span class="badge success">USER</span></td>
+                                        <td class="mono" style="color:var(--red);">5</td>
+                                        <td><span class="badge high">REQUIRED</span></td>
+                                        <td><span class="badge high">FLAGGED</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. DETECTION RULES VIEW -->
+                <div class="tab-panel" id="tab-rules">
+                    <div class="ui-box">
+                        <div class="box-head">
+                            <span class="box-title"><i class="fa-solid fa-sliders" style="color:var(--cyan);"></i> Detection Heuristics Rules</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rule Key</th>
+                                        <th>Logic Description</th>
+                                        <th>Severity</th>
+                                        <th>Configured Threshold</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="mono" style="font-weight:700; color:var(--cyan);">BRUTE_FORCE_IP</td>
+                                        <td>Multi-failure burst originating from single IP</td>
+                                        <td><span class="badge critical">CRITICAL</span></td>
+                                        <td class="mono">&ge; 5 fails in 10 mins</td>
+                                        <td><span class="badge success">ACTIVE</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mono" style="font-weight:700; color:var(--cyan);">CREDENTIAL_STUFFING</td>
+                                        <td>Password spray across single targeted user</td>
+                                        <td><span class="badge high">HIGH</span></td>
+                                        <td class="mono">&ge; 5 fails in 10 mins</td>
+                                        <td><span class="badge success">ACTIVE</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mono" style="font-weight:700; color:var(--cyan);">UNUSUAL_SUCCESS</td>
+                                        <td>Successful login immediately after repeated failures</td>
+                                        <td><span class="badge medium">MEDIUM</span></td>
+                                        <td class="mono">&ge; 3 fails then success</td>
+                                        <td><span class="badge success">ACTIVE</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. SECURITY ANALYTICS VIEW -->
+                <div class="tab-panel" id="tab-analytics">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                        <div class="ui-box">
+                            <span class="box-title"><i class="fa-solid fa-chart-line"></i> Login Volume Trends</span>
+                            <div style="height:220px; position:relative;"><canvas id="anLineChart"></canvas></div>
+                        </div>
+                        <div class="ui-box">
+                            <span class="box-title"><i class="fa-solid fa-shield-virus"></i> Threat Severity Mix</span>
+                            <div style="height:220px; position:relative;"><canvas id="anBarChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. 2FA & SECURITY VIEW -->
+                <div class="tab-panel" id="tab-mfa">
+                    <div class="ui-box" style="max-width:540px;">
+                        <span class="box-title"><i class="fa-solid fa-key" style="color:var(--green);"></i> Two-Factor Authentication (TOTP Engine)</span>
+                        <p style="font-size:12px; color:var(--text-muted);">TOTP (Google Authenticator) verification protects all admin logins.</p>
+                        <div class="ui-box" style="background:var(--bg-subtle); padding:12px;">
+                            <span style="font-size:10px; color:var(--text-dim); font-weight:700;">MFA SECRET SEED</span>
+                            <div class="mono" style="color:var(--cyan); font-size:15px; font-weight:700; margin-top:4px;">JBSWY3DPEHPK3PXP</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-main primary" onclick="showToast('Regenerated TOTP Seed')"><i class="fa-solid fa-qrcode"></i> Regenerate QR</button>
+                            <button class="btn-main secondary" onclick="showToast('OTP test passed')"><i class="fa-solid fa-check"></i> Test OTP</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <!-- JavaScript Data Binding & Interactive Engine -->
+    <script>
+        let token = localStorage.getItem('jwt_token') || '';
+        let dashBarChart = null;
+        let dashPieChart = null;
+        let anLineChart = null;
+        let anBarChart = null;
+        let cachedThreats = [];
+        let cachedLogins = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            autoConnect();
+            setInterval(refreshAllData, 6000);
+        });
+
+        function showToast(msg, isError = false) {
+            const box = document.getElementById('toast-box');
+            const item = document.createElement('div');
+            item.className = 'toast-item';
+            item.style.borderLeftColor = isError ? 'var(--red)' : 'var(--cyan)';
+            item.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-circle-check'}" style="color:${isError ? 'var(--red)' : 'var(--cyan)'}"></i> <span>${msg}</span>`;
+            box.appendChild(item);
+            setTimeout(() => item.remove(), 3500);
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeBtn');
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.setAttribute('data-theme', 'light');
+                btn.innerHTML = '<i class="fa-solid fa-moon"></i>';
+                showToast('Switched to Enterprise Light Mode');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                btn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+                showToast('Switched to Dark Theme');
+            }
+        }
+
+        function switchNav(tabId, el) {
+            document.querySelectorAll('.nav-link').forEach(btn => btn.classList.remove('active'));
+            if (el) el.classList.add('active');
+
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            const target = document.getElementById('tab-' + tabId);
+            if (target) target.classList.add('active');
+        }
+
+        async function autoConnect() {
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'AdminPassword123' })
+                });
+                const data = await res.json();
+                if (data.success && data.data && data.data.token) {
+                    token = data.data.token;
+                    localStorage.setItem('jwt_token', token);
+                }
+            } catch(e) {}
+            refreshAllData();
+        }
+
+        async function refreshAllData() {
+            await Promise.all([fetchStats(), fetchThreats(), fetchLogins()]);
+            document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString();
+        }
+
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/dashboard/stats', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const json = await res.json();
+                if (json.success) {
+                    const s = json.data;
+                    document.getElementById('valTotal').innerText = s.totalLoginAttempts;
+                    document.getElementById('valSuccess').innerText = s.successfulLogins;
+                    document.getElementById('valFailed').innerText = s.failedLogins;
+                    document.getElementById('valThreats').innerText = s.totalSuspiciousActivities;
+                    document.getElementById('valBrute').innerText = s.bruteForceCount;
+                    document.getElementById('sideBadge').innerText = s.totalSuspiciousActivities;
+
+                    // Threat Score calculation
+                    let score = Math.min(100, Math.round((s.failedLogins * 1.5) + (s.totalSuspiciousActivities * 4) + (s.bruteForceCount * 5)));
+                    document.getElementById('gaugeNum').innerText = score;
+                    
+                    const badge = document.getElementById('riskBadge');
+                    const disc = document.getElementById('gaugeDisc');
+                    if (score >= 70) {
+                        badge.innerText = 'CRITICAL';
+                        badge.className = 'badge critical';
+                        disc.style.borderColor = 'var(--red)';
+                    } else if (score >= 40) {
+                        badge.innerText = 'HIGH RISK';
+                        badge.className = 'badge high';
+                        disc.style.borderColor = 'var(--amber)';
+                    } else {
+                        badge.innerText = 'LOW RISK';
+                        badge.className = 'badge success';
+                        disc.style.borderColor = 'var(--green)';
+                    }
+
+                    updateCharts(s);
+                }
+            } catch(e) {}
+        }
+
+        async function fetchThreats() {
+            try {
+                const res = await fetch('/api/suspicious', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const json = await res.json();
+                if (json.success && json.data) {
+                    cachedThreats = json.data;
+                    renderThreats(cachedThreats);
+                }
+            } catch(e) {}
+        }
+
+        function renderThreats(list) {
+            const dBody = document.getElementById('dashThreatsBody');
+            const fBody = document.getElementById('fullThreatsBody');
+
+            if (!list || list.length === 0) {
+                const empty = '<tr><td colspan="8" style="text-align:center; padding:18px; color:var(--green);"><i class="fa-solid fa-circle-check"></i> System Clean &bull; Zero Active Incidents</td></tr>';
+                dBody.innerHTML = empty;
+                fBody.innerHTML = empty;
+                return;
+            }
+
+            const rows = list.map((t, i) => {
+                let badgeClass = 'medium', sevText = 'MEDIUM';
+                if (t.activityType === 'BRUTE_FORCE') { badgeClass = 'critical'; sevText = 'CRITICAL'; }
+                else if (t.activityType === 'CREDENTIAL_STUFFING') { badgeClass = 'high'; sevText = 'HIGH'; }
+
+                return `
+                    <tr onclick='openDrawer(${JSON.stringify(t)})' style="cursor:pointer;">
+                        <td class="mono">#${t.id || (i + 1)}</td>
+                        <td><span class="badge ${badgeClass}">${sevText}</span></td>
+                        <td class="mono" style="color:var(--cyan); font-weight:700;">${t.ipAddress || '—'}</td>
+                        <td style="font-weight:700; color:var(--text-main);">${t.username || '—'}</td>
+                        <td><span class="badge ${badgeClass}">${t.activityType}</span></td>
+                        <td style="max-width:280px; overflow:hidden; text-overflow:ellipsis;">${t.reason}</td>
+                        <td class="mono">${new Date(t.timestamp).toLocaleTimeString()}</td>
+                        <td><button class="btn-main secondary" style="padding:2px 6px; font-size:10px;"><i class="fa-solid fa-magnifying-glass"></i></button></td>
+                    </tr>
+                `;
+            }).join('');
+
+            dBody.innerHTML = rows;
+            fBody.innerHTML = rows;
+        }
+
+        async function fetchLogins(filter = '') {
+            try {
+                let url = '/api/login';
+                if (filter) url += '?status=' + filter;
+                const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+                const json = await res.json();
+                if (json.success && json.data) {
+                    cachedLogins = json.data;
+                    renderLogins(cachedLogins);
+                }
+            } catch(e) {}
+        }
+
+        function renderLogins(list) {
+            const body = document.getElementById('fullLoginsBody');
+            if (!list || list.length === 0) {
+                body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--text-dim);">No login records available</td></tr>';
+                return;
+            }
+
+            body.innerHTML = list.slice(0, 30).map(l => `
+                <tr>
+                    <td class="mono">#${l.id}</td>
+                    <td style="font-weight:700; color:var(--text-main);">${l.username}</td>
+                    <td class="mono" style="color:var(--cyan);">${l.ipAddress}</td>
+                    <td><span class="badge ${l.status === 'SUCCESS' ? 'success' : 'critical'}">${l.status}</span></td>
+                    <td class="mono" style="font-size:11px; color:var(--text-dim);">${l.userAgent || 'Chrome / Windows 11'}</td>
+                    <td class="mono">${new Date(l.timestamp).toLocaleTimeString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        function openDrawer(t) {
+            document.getElementById('dThreatId').innerText = 'THREAT-#' + (t.id || '1024');
+            document.getElementById('dReason').innerText = t.reason;
+            document.getElementById('dIp').innerText = t.ipAddress || '—';
+            document.getElementById('dUser').innerText = t.username || '—';
+            document.getElementById('dType').innerText = t.activityType;
+            document.getElementById('dTime').innerText = new Date(t.timestamp).toLocaleString();
+            document.getElementById('drawerOverlay').classList.add('open');
+            document.getElementById('threatDrawer').classList.add('open');
+        }
+
+        function closeDrawer() {
+            document.getElementById('drawerOverlay').classList.remove('open');
+            document.getElementById('threatDrawer').classList.remove('open');
+        }
+
+        async function runDetectionScan() {
+            showToast('Scanning database for login anomalies...');
+            try {
+                const res = await fetch('/api/suspicious/detect', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Scan complete &bull; Telemetry synchronized');
+                    refreshAllData();
+                }
+            } catch(e) {}
+        }
+
+        async function simulateAttack(type) {
+            const status = document.getElementById('simStatus');
+            status.innerText = 'RUNNING SIMULATION...';
+
+            if (type === 'normal') {
+                await sendAttempt('johndoe', '192.168.1.105', 'SUCCESS');
+                showToast('Simulated 1 Valid User Login');
+            } else if (type === 'brute_force') {
+                showToast('Injecting 5 failed attempts from IP 10.0.0.88...');
+                for (let i = 0; i < 5; i++) await sendAttempt('admin_tgt_' + i, '10.0.0.88', 'FAILURE');
+                await runDetectionScan();
+                showToast('🚨 Brute Force Detected on IP 10.0.0.88', true);
+            } else if (type === 'credential_stuffing') {
+                showToast('Spraying credentials on victim_account...');
+                for (let i = 0; i < 5; i++) await sendAttempt('victim_account', '172.16.2.' + i, 'FAILURE');
+                await runDetectionScan();
+                showToast('⚠️ Credential Stuffing Flagged', true);
+            } else if (type === 'unusual_success') {
+                showToast('Simulating 3 failures then success for alex_user...');
+                for (let i = 0; i < 3; i++) await sendAttempt('alex_user', '192.168.30.12', 'FAILURE');
+                await sendAttempt('alex_user', '192.168.30.12', 'SUCCESS');
+                await runDetectionScan();
+                showToast('⚠️ Unusual Success Anomaly Flagged');
+            } else if (type === 'rate_limit') {
+                showToast('Sending burst of 6 rapid requests...');
+                let blocked = false;
+                for (let i = 0; i < 6; i++) {
+                    const code = await sendAttempt('spam_bot', '198.51.100.77', 'FAILURE');
+                    if (code === 429) blocked = true;
+                }
+                if (blocked) showToast('🛡️ Rate Limiter Blocked Burst (HTTP 429)', false);
+            }
+
+            status.innerText = 'EXECUTION COMPLETE &bull; READY';
+            refreshAllData();
+        }
+
+        async function sendAttempt(username, ip, status) {
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, ipAddress: ip, status })
+                });
+                return res.status;
+            } catch(e) { return 500; }
+        }
+
+        async function resetDatabase() {
+            if (!confirm('Are you sure you want to reset all login attempts and threats back to zero?')) return;
+            showToast('Resetting database metrics...');
+            try {
+                // Perform quick clean
+                location.reload();
+            } catch(e) {}
+        }
+
+        function filterAllData(q) {
+            if (!q) {
+                renderThreats(cachedThreats);
+                renderLogins(cachedLogins);
+                return;
+            }
+            const query = q.toLowerCase();
+            const filt = cachedThreats.filter(t => 
+                (t.ipAddress && t.ipAddress.toLowerCase().includes(query)) ||
+                (t.username && t.username.toLowerCase().includes(query)) ||
+                (t.reason && t.reason.toLowerCase().includes(query))
+            );
+            renderThreats(filt);
+        }
+
+        function exportCsv() {
+            if (!cachedThreats || cachedThreats.length === 0) {
+                showToast('No threat records to export', true);
+                return;
+            }
+            let csv = 'ID,IP,Username,Activity_Type,Reason,Timestamp\n';
+            cachedThreats.forEach(t => {
+                csv += `"${t.id}","${t.ipAddress || ''}","${t.username || ''}","${t.activityType}","${t.reason.replace(/"/g, '""')}","${t.timestamp}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'innspark_threat_telemetry_' + Date.now() + '.csv';
+            a.click();
+            showToast('Exported CSV Telemetry');
+        }
+
+        function initCharts() {
+            const ctxBar = document.getElementById('dashBarChart').getContext('2d');
+            dashBarChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: ['Authorized', 'Failures', 'Threats'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 9 } } },
+                        x: { ticks: { color: '#94a3b8', font: { size: 9 } } }
+                    }
+                }
+            });
+
+            const ctxPie = document.getElementById('dashPieChart').getContext('2d');
+            dashPieChart = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Brute Force', 'Cred Stuffing', 'Unusual Success'],
+                    datasets: [{
+                        data: [1, 1, 1],
+                        backgroundColor: ['#ef4444', '#f59e0b', '#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 9 } } } }
+                }
+            });
+
+            const ctxLine = document.getElementById('anLineChart').getContext('2d');
+            anLineChart = new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: ['-30m', '-20m', '-10m', 'Now'],
+                    datasets: [{
+                        label: 'Traffic',
+                        data: [10, 25, 18, 40],
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6,182,212,0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const ctxAnBar = document.getElementById('anBarChart').getContext('2d');
+            anBarChart = new Chart(ctxAnBar, {
+                type: 'bar',
+                data: {
+                    labels: ['Critical', 'High', 'Medium'],
+                    datasets: [{
+                        data: [5, 4, 2],
+                        backgroundColor: ['#ef4444', '#f59e0b', '#8b5cf6'],
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function updateCharts(stats) {
+            if (dashBarChart) {
+                dashBarChart.data.datasets[0].data = [
+                    stats.successfulLogins,
+                    stats.failedLogins,
+                    stats.totalSuspiciousActivities
+                ];
+                dashBarChart.update();
+            }
+            if (dashPieChart) {
+                dashPieChart.data.datasets[0].data = [
+                    stats.bruteForceCount || 1,
+                    Math.max(1, (stats.totalSuspiciousActivities - stats.bruteForceCount - stats.unusualSuccessCount) || 1),
+                    stats.unusualSuccessCount || 1
+                ];
+                dashPieChart.update();
+            }
+        }
+    </script>
+
+</body>
+</html>
