@@ -28,8 +28,8 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
+                .requestMatchers("/", "/dashboard", "/login", "/register", "/css/**", "/js/**", "/favicon.ico", "/error").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/login", "/register", "/dashboard", "/css/**", "/js/**").permitAll()
                 // Login attempt logging, simulations, and dashboard telemetry
                 .requestMatchers("/api/login/**", "/api/dashboard/**").permitAll()
                 // Admin protected endpoints
