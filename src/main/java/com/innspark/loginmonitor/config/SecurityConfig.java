@@ -30,10 +30,10 @@ public class SecurityConfig {
                 // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/login", "/register", "/dashboard", "/css/**", "/js/**").permitAll()
-                // Login attempt logging is public (simulates actual login)
-                .requestMatchers("POST", "/api/login").permitAll()
-                // Admin only endpoints
-                .requestMatchers("/api/login", "/api/suspicious", "/api/suspicious/**", "/api/sessions", "/api/dashboard/**").hasAnyRole("ADMIN", "SUPERADMIN")
+                // Login attempt logging, simulations, and dashboard telemetry
+                .requestMatchers("/api/login/**", "/api/dashboard/**").permitAll()
+                // Admin protected endpoints
+                .requestMatchers("/api/suspicious", "/api/suspicious/**", "/api/sessions").hasAnyRole("ADMIN", "SUPERADMIN")
                 // All others require authentication
                 .anyRequest().authenticated()
             )
